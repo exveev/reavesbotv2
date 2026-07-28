@@ -1,0 +1,9 @@
+REAVESBOT V2 CHANGES
+- Replaced the rounded marketing-dashboard UI with a denser operations-console layout.
+- Added multi-username parsing (spaces, commas, or new lines; up to 50 unique targets).
+- /api/check now checks multiple usernames concurrently and returns a results array.
+- /api/snipe now monitors one list of usernames in a shared SSE job.
+- Result rows update independently as each username is checked.
+- Connected account label uses accountUsername, never the phone/device name.
+- Server attempts to resolve accountUsername from real-auth-info and authenticated profile endpoints.
+- Added /api/account to refresh the displayed account username for previously saved credentials.

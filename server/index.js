@@ -5,234 +5,290 @@ const path = require("path");
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 
 const BASE = "https://api.real.vg";
-
-// ── Active snipe jobs (in-memory) ────────────
 const jobs = {};
 
-// ── Parse raw HTTP request ────────────────────
 function parseCreds(raw) {
   const result = {};
   const want = {
-    "real-auth-info":            "authInfo",
-    "real-device-uuid":          "deviceUuid",
-    "real-request-token":        "requestToken",
+    "real-auth-info": "authInfo",
+    "real-device-uuid": "deviceUuid",
+    "real-request-token": "requestToken",
     "real-native-request-token": "nativeToken",
-    "real-device-name":          "deviceName",
-    "real-device-type":          "deviceType",
-    "real-version":              "version",
-    "user-agent":                "userAgent",
-    "baggage":                   "baggage",
-    "sentry-trace":              "sentryTrace",
+    "real-device-name": "deviceName",
+    "real-device-type": "deviceType",
+    "real-version": "version",
+    "user-agent": "userAgent",
+    baggage: "baggage",
+    "sentry-trace": "sentryTrace",
   };
+
   for (const line of raw.split(/\r?\n/)) {
     const colon = line.indexOf(":");
     if (colon < 1) continue;
-    const k = line.slice(0, colon).trim().toLowerCase();
-    const v = line.slice(colon + 1).trim();
-    if (want[k]) result[want[k]] = v;
+    const key = line.slice(0, colon).trim().toLowerCase();
+    const value = line.slice(colon + 1).trim();
+    if (want[key]) result[want[key]] = value;
   }
   return result;
 }
 
-// ── Build headers ─────────────────────────────
 function makeHeaders(creds) {
   const headers = {
-    "Accept":                    "application/json",
-    "Content-Type":              "application/json",
-    "real-auth-info":            creds.authInfo,
-    "real-device-uuid":          creds.deviceUuid,
-    "real-request-token":        creds.requestToken,
-    "real-device-name":          creds.deviceName || "iPhone14,7",
-    "real-device-type":          creds.deviceType || "ios",
-    "real-version":              creds.version || "34",
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "real-auth-info": creds.authInfo,
+    "real-device-uuid": creds.deviceUuid,
+    "real-request-token": creds.requestToken,
+    "real-device-name": creds.deviceName || "iPhone14,7",
+    "real-device-type": creds.deviceType || "ios",
+    "real-version": creds.version || "34",
     "real-native-request-token": creds.nativeToken,
-    "User-Agent":                creds.userAgent || "real/1 CFNetwork/3826.600.41.2.1 Darwin/24.6.0",
-    "Accept-Language":           "en-US,en;q=0.9",
-    "Accept-Encoding":           "gzip, deflate, br",
-    "Connection":                "keep-alive",
-    "baggage":                   creds.baggage || "sentry-environment=production,sentry-public_key=00e61a8109694360a8db52afe3f9a4fa,sentry-release=vg.real-10.163",
-    "sentry-trace":              creds.sentryTrace || "0000000000000000000000000000000000000000-0000000000000000-0",
+    "User-Agent": creds.userAgent || "real/1 CFNetwork/3826.600.41.2.1 Darwin/24.6.0",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    Connection: "keep-alive",
+    baggage: creds.baggage,
+    "sentry-trace": creds.sentryTrace,
   };
-  // Let axios calculate Content-Length. Rewriting signed/token headers can cause 401s.
+
   return Object.fromEntries(
     Object.entries(headers).filter(([, value]) => value !== undefined && value !== null && value !== "")
   );
 }
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-// ── Check if username is available ───────────
-async function checkUsername(username, creds) {
-  try {
-    const res = await axios.get(
-      `${BASE}/user/${encodeURIComponent(username)}?_=${Date.now()}`,
-      {
+function normalizeUsernames(input) {
+  const values = Array.isArray(input) ? input : [input];
+  return [...new Set(values
+    .flatMap(value => String(value || "").split(/[\s,]+/))
+    .map(value => value.trim().replace(/^@+/, ""))
+    .filter(Boolean))]
+    .slice(0, 50);
+}
+
+function findUsername(value, depth = 0) {
+  if (!value || depth > 5) return null;
+  if (typeof value === "string") {
+    const cleaned = value.trim();
+    if (/^[a-zA-Z0-9._-]{2,40}$/.test(cleaned)) return cleaned;
+    return null;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const match = findUsername(item, depth + 1);
+      if (match) return match;
+    }
+    return null;
+  }
+  if (typeof value === "object") {
+    const preferred = ["userName", "username", "handle", "displayName"];
+    for (const key of preferred) {
+      if (typeof value[key] === "string" && value[key].trim()) return value[key].trim().replace(/^@/, "");
+    }
+    for (const key of ["user", "profile", "account", "data", "me"]) {
+      if (value[key]) {
+        const match = findUsername(value[key], depth + 1);
+        if (match) return match;
+      }
+    }
+  }
+  return null;
+}
+
+function decodeAuthInfo(authInfo) {
+  if (!authInfo) return [];
+  const candidates = [authInfo];
+  const parts = authInfo.split(".");
+  if (parts.length >= 2) candidates.push(parts[1]);
+  const decoded = [];
+
+  for (const candidate of candidates) {
+    try { decoded.push(JSON.parse(candidate)); } catch (_) {}
+    try {
+      const normalized = candidate.replace(/-/g, "+").replace(/_/g, "/");
+      decoded.push(JSON.parse(Buffer.from(normalized, "base64").toString("utf8")));
+    } catch (_) {}
+    try { decoded.push(JSON.parse(decodeURIComponent(candidate))); } catch (_) {}
+  }
+  return decoded;
+}
+
+async function resolveAccountUsername(creds) {
+  for (const decoded of decodeAuthInfo(creds.authInfo)) {
+    const username = findUsername(decoded);
+    if (username) return username;
+  }
+
+  const endpoints = ["/user/me", "/users/me", "/profile"];
+  for (const endpoint of endpoints) {
+    try {
+      const response = await axios.get(`${BASE}${endpoint}`, {
         headers: makeHeaders(creds),
         validateStatus: () => true,
+      });
+      if (response.status === 401 || response.status === 403) {
+        return null;
       }
-    );
-
-    console.log("Username:", username);
-    console.log("Status:", res.status);
-    console.log("Response:", res.data);
-
-    if (res.status === 404) {
-      return { available: true };
-    }
-
- if (res.status === 200) {
-  if (res.data?.user === null) {
-    return { available: true };
+      if (response.status >= 200 && response.status < 300) {
+        const username = findUsername(response.data);
+        if (username) return username;
+      }
+    } catch (_) {}
   }
-
-  return {
-    available: false,
-    user: res.data.user,
-  };
+  return null;
 }
 
-    if (res.status === 401 || res.status === 403) {
-      return {
-        available: null,
-        authError: true,
-        error: "Your saved Real credentials are expired or invalid. Reconnect with a fresh captured request.",
-        status: res.status,
-        data: res.data,
-      };
-    }
-
-    return {
-      available: null,
-      error: `Username check failed with status ${res.status}`,
-      status: res.status,
-      data: res.data,
-    };
-  } catch (e) {
-    console.error(e);
-    return { available: null, error: e.message };
-  }
-}
-
-// ── Claim username ────────────────────────────
-async function claimUsername(username, creds) {
-  const body = JSON.stringify({ userName: username });
+async function checkUsername(username, creds) {
   try {
-    const res = await axios.post(`${BASE}/user/changeusername`, body, {
+    const response = await axios.get(`${BASE}/user/${encodeURIComponent(username)}?_=${Date.now()}`, {
       headers: makeHeaders(creds),
       validateStatus: () => true,
     });
-    return { ok: res.status === 200 || res.status === 201, status: res.status, data: res.data };
-  } catch (e) {
-    return { ok: false, error: e.message };
+
+    if (response.status === 404) return { username, available: true };
+    if (response.status === 200) {
+      if (response.data?.user === null) return { username, available: true };
+      return { username, available: false, user: response.data?.user };
+    }
+    if (response.status === 401 || response.status === 403) {
+      return {
+        username,
+        available: null,
+        authError: true,
+        error: "Your saved Real credentials are expired or invalid. Reconnect with a fresh captured request.",
+        status: response.status,
+      };
+    }
+    return {
+      username,
+      available: null,
+      error: `Username check failed with status ${response.status}`,
+      status: response.status,
+    };
+  } catch (error) {
+    return { username, available: null, error: error.message };
   }
 }
 
-// ── Routes ────────────────────────────────────
+async function claimUsername(username, creds) {
+  try {
+    const response = await axios.post(`${BASE}/user/changeusername`, { userName: username }, {
+      headers: makeHeaders(creds),
+      validateStatus: () => true,
+    });
+    return {
+      ok: response.status === 200 || response.status === 201,
+      status: response.status,
+      data: response.data,
+    };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
 
-// Parse creds from raw request
-app.post("/api/parse-creds", (req, res) => {
+app.post("/api/parse-creds", async (req, res) => {
   const { raw } = req.body;
   if (!raw) return res.status(400).json({ error: "No raw request provided" });
   const creds = parseCreds(raw);
   if (!creds.authInfo) return res.status(400).json({ error: "Could not find real-auth-info header" });
+  creds.accountUsername = await resolveAccountUsername(creds);
   res.json(creds);
 });
 
-// Check a username once
-app.post("/api/check", async (req, res) => {
-  const { username, creds } = req.body;
-  if (!username || !creds) return res.status(400).json({ error: "Missing username or creds" });
-  const result = await checkUsername(username, creds);
-  if (result.authError) return res.status(result.status || 401).json(result);
-  if (result.error) return res.status(result.status || 502).json(result);
-  res.json(result);
+app.post("/api/account", async (req, res) => {
+  const { creds } = req.body;
+  if (!creds) return res.status(400).json({ error: "Missing creds" });
+  const accountUsername = await resolveAccountUsername(creds);
+  res.json({ accountUsername });
 });
 
-// Start a snipe job (SSE stream)
+app.post("/api/check", async (req, res) => {
+  const usernames = normalizeUsernames(req.body.usernames || req.body.username);
+  const { creds } = req.body;
+  if (!usernames.length || !creds) return res.status(400).json({ error: "Missing usernames or creds" });
+
+  const results = await Promise.all(usernames.map(username => checkUsername(username, creds)));
+  const authError = results.find(result => result.authError);
+  if (authError) return res.status(authError.status || 401).json(authError);
+  res.json({ results });
+});
+
 app.post("/api/snipe", async (req, res) => {
-  const { username, creds, interval = 5000 } = req.body;
-  if (!username || !creds) return res.status(400).json({ error: "Missing username or creds" });
+  const usernames = normalizeUsernames(req.body.usernames || req.body.username);
+  const { creds, interval = 5000 } = req.body;
+  if (!usernames.length || !creds) return res.status(400).json({ error: "Missing usernames or creds" });
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  const send = (type, data) => {
+  const send = (type, data = {}) => {
     try { res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`); } catch (_) {}
   };
 
-  const jobId = Date.now().toString();
+  const jobId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   jobs[jobId] = { running: true };
+  send("started", { jobId, usernames, message: `Monitoring ${usernames.length} username${usernames.length === 1 ? "" : "s"}.` });
 
-  send("started", { jobId, username, message: `👀 Watching for @${username}...` });
-
-  let checks = 0;
-
+  let cycle = 0;
   while (jobs[jobId]?.running) {
-    checks++;
-    send("checking", { message: `🔍 Check #${checks} — is @${username} available?` });
+    cycle += 1;
+    send("checking", { cycle, message: `Cycle ${cycle} started.` });
 
-    const result = await checkUsername(username, creds);
+    for (const username of usernames) {
+      if (!jobs[jobId]?.running) break;
+      const result = await checkUsername(username, creds);
 
-    if (result.authError) {
-      send("auth_error", {
-        status: result.status,
-        message: result.error,
-      });
-      send("done", { success: false, message: result.error });
-      break;
-    } else if (result.error) {
-      send("error", { message: `Check failed: ${result.error}` });
-    } else if (result.available === true) {
-      send("available", { message: `✅ @${username} is AVAILABLE! Claiming now...` });
+      if (result.authError) {
+        send("auth_error", { username, status: result.status, message: result.error });
+        jobs[jobId].running = false;
+        break;
+      }
+      if (result.error) {
+        send("error", { username, message: `@${username}: ${result.error}` });
+        continue;
+      }
+      if (result.available === false) {
+        send("taken", { username, available: false, message: `@${username} is taken.` });
+        continue;
+      }
 
-      // Try to claim it
+      send("available", { username, available: true, message: `@${username} is available. Attempting claim.` });
       const claim = await claimUsername(username, creds);
       if (claim.ok) {
-        send("claimed", { message: `🎉 Successfully claimed @${username}!` });
-        send("done", { success: true, message: `@${username} is now yours!` });
-      } else {
-        send("claim_failed", { message: `❌ Claim failed: ${JSON.stringify(claim.data || claim.error)}` });
-        send("done", { success: false, message: "Available but claim failed — try manually" });
+        send("claimed", { username, success: true, message: `Successfully claimed @${username}.` });
+        send("done", { username, success: true, message: `@${username} is now yours.` });
+        jobs[jobId].running = false;
+        break;
       }
-      break;
-    } else if (result.available === false) {
-      send("log", { message: `@${username} is taken — waiting ${interval / 1000}s...` });
-    } else {
-      send("error", { message: "The API returned an unknown availability result." });
+      send("claim_failed", { username, success: false, message: `Claim failed for @${username}.` });
     }
 
-    // Wait before next check
-    await sleep(interval);
+    if (jobs[jobId]?.running) {
+      send("waiting", { message: `Next cycle in ${Math.max(1, interval / 1000)} seconds.` });
+      await sleep(Math.max(1000, Number(interval) || 5000));
+    }
   }
 
-  if (!jobs[jobId]?.running) {
-    send("stopped", { message: "🛑 Snipe job stopped." });
-  }
-
-  delete jobs[jobId];
+  if (jobs[jobId]) delete jobs[jobId];
   res.end();
 });
 
-// Stop a snipe job
 app.post("/api/stop", (req, res) => {
   const { jobId } = req.body;
   if (jobs[jobId]) {
     jobs[jobId].running = false;
-    res.json({ ok: true });
-  } else {
-    res.json({ ok: false, error: "Job not found" });
+    return res.json({ ok: true });
   }
+  res.json({ ok: false, error: "Job not found" });
 });
 
-// Serve React build in production
 app.use(express.static(path.join(__dirname, "../client/build")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build/index.html"));
-});
+app.get("*", (req, res) => res.sendFile(path.join(__dirname, "../client/build/index.html")));
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`✦ ReavesBot running on port ${PORT}`));
+app.listen(PORT, () => console.log(`ReavesBot running on port ${PORT}`));

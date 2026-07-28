@@ -1,384 +1,120 @@
-import { useState, useRef, useEffect } from "react";
-
-const C = {
-  bg: "#000", surface: "#111", surface2: "#181818",
-  border: "#1e1e1e", border2: "#2a2a2a",
-  text: "#fff", muted: "#666", dim: "#333",
-  accent: "#e8294c", green: "#22c55e", yellow: "#f59e0b",
-};
-const ff = { h: "'Barlow Condensed',sans-serif", b: "'Barlow',sans-serif" };
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const css = `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #000; color: #fff; font-family: 'Barlow', sans-serif; }
-  input, textarea, select { font-family: inherit; }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  .fade-up { animation: fadeUp 0.3s ease; }
+:root{--bg:#0b0d10;--panel:#111419;--panel2:#0e1115;--line:#242a33;--line2:#343c48;--text:#f4f6f8;--muted:#8b96a5;--dim:#596575;--accent:#ef476f;--green:#35c98a;--yellow:#e8b44f;--blue:#62a8ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}.app{min-height:100vh}.topbar{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;background:rgba(11,13,16,.94);backdrop-filter:blur(14px);z-index:10}.brand{display:flex;align-items:center;gap:11px;font-weight:760;letter-spacing:-.02em}.mark{width:28px;height:28px;border:1px solid var(--line2);display:grid;place-items:center;font-family:"JetBrains Mono",monospace;font-size:12px}.account{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px}.dot{width:7px;height:7px;border-radius:50%;background:var(--green)}.shell{max-width:1180px;margin:0 auto;padding:28px 24px 48px}.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}.heading{font-size:30px;letter-spacing:-.045em;margin:6px 0 6px}.sub{color:var(--muted);font-size:14px;margin:0}.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:16px;margin-top:24px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px}.panelHead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.panelTitle{font-size:13px;font-weight:700}.panelBody{padding:16px}.label{display:block;font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}.textarea{width:100%;min-height:126px;resize:vertical;background:var(--panel2);border:1px solid var(--line2);border-radius:5px;color:var(--text);padding:12px;outline:none;line-height:1.55}.textarea:focus{border-color:#667386}.hint{font-size:12px;color:var(--dim);margin-top:7px}.toolbar{display:flex;gap:8px;align-items:center;margin-top:14px}.select{background:var(--panel2);color:var(--text);border:1px solid var(--line2);border-radius:5px;padding:10px 11px}.btn{border:1px solid var(--line2);border-radius:5px;background:var(--panel2);color:var(--text);padding:10px 14px;font-weight:650}.btnPrimary{background:var(--text);color:#0b0d10;border-color:var(--text)}.btnDanger{border-color:#653143;color:#ff7897}.btn:disabled{opacity:.42;cursor:not-allowed}.statusRow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.metric{border-left:2px solid var(--line2);padding:8px 10px;background:var(--panel2)}.metricValue{font-size:18px;font-weight:730}.metricLabel{font-family:"JetBrains Mono",monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:3px}.results{display:flex;flex-direction:column}.resultRow{display:grid;grid-template-columns:minmax(0,1fr) 96px 76px;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px}.resultRow:last-child{border-bottom:0}.user{font-family:"JetBrains Mono",monospace}.state{font-size:11px;text-transform:uppercase;letter-spacing:.08em}.available{color:var(--green)}.taken{color:var(--muted)}.error{color:var(--accent)}.pending{color:var(--yellow)}.smallBtn{border:0;background:transparent;color:var(--muted);font-size:12px;text-align:right}.logs{height:340px;overflow:auto;background:#0a0c0f;font-family:"JetBrains Mono",monospace;font-size:11px}.log{display:grid;grid-template-columns:76px 76px 1fr;gap:8px;padding:7px 12px;border-bottom:1px solid #171b21;color:#b9c1cc}.time{color:#596575}.type{color:#7f8b9b;text-transform:uppercase}.log.success{border-left:2px solid var(--green)}.log.warn{border-left:2px solid var(--yellow)}.log.fail{border-left:2px solid var(--accent)}.empty{padding:38px 18px;text-align:center;color:var(--dim);font-size:13px}.modalWrap{position:fixed;inset:0;background:rgba(3,4,6,.82);display:grid;place-items:center;padding:20px;z-index:30}.modal{width:min(560px,100%);background:var(--panel);border:1px solid var(--line2);border-radius:8px}.modal h2{font-size:20px;margin:0}.modal p{font-size:13px;color:var(--muted);line-height:1.6}.raw{width:100%;height:180px;background:#090b0e;color:#c5ced9;border:1px solid var(--line2);border-radius:5px;padding:11px;font-family:"JetBrains Mono",monospace;font-size:11px;resize:none}.errorBox{border-left:2px solid var(--accent);background:#1a1115;color:#ff8aa3;padding:10px 12px;font-size:12px;margin-top:10px}@media(max-width:860px){.grid{grid-template-columns:1fr}.statusRow{grid-template-columns:repeat(2,1fr)}.topbar{padding:0 16px}.shell{padding:22px 16px}.resultRow{grid-template-columns:minmax(0,1fr) 82px 60px}}
 `;
 
-const Spinner = ({ color = C.accent }) => (
-  <div style={{ width: 18, height: 18, border: `2px solid #333`, borderTop: `2px solid ${color}`, borderRadius: "50%", animation: "spin .7s linear infinite", display: "inline-block" }} />
-);
+function cleanNames(value) {
+  return [...new Set(value.split(/[\s,]+/).map(v => v.trim().replace(/^@+/, "")).filter(Boolean))].slice(0, 50);
+}
 
-// ── CONNECT MODAL ─────────────────────────────
 function ConnectModal({ onConnect, onClose }) {
   const [raw, setRaw] = useState("");
-  const [err, setErr] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const valid = raw.toLowerCase().includes("real-auth-info");
 
-  const handle = async () => {
-    setLoading(true); setErr("");
-    const r = await fetch("/api/parse-creds", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ raw }),
-    });
-    const data = await r.json();
-    setLoading(false);
-    if (data.error) { setErr(data.error); return; }
-    onConnect(data);
-  };
+  async function connect() {
+    setLoading(true); setError("");
+    try {
+      const response = await fetch("/api/parse-creds", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ raw }) });
+      const data = await response.json();
+      if (!response.ok || data.error) throw new Error(data.error || "Could not connect account");
+      onConnect(data);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  }
 
-  const valid = raw.includes("real-auth-info");
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(8px)" }}>
-      <div style={{ background: "#141414", borderRadius: 18, padding: 28, width: "100%", maxWidth: 460, border: `1px solid ${C.border2}` }} className="fade-up">
-        <h2 style={{ fontFamily: ff.h, fontSize: 24, fontWeight: 900, marginBottom: 6 }}>Connect Account</h2>
-        <p style={{ color: C.muted, fontFamily: ff.b, fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
-          Open Charles / Proxyman, capture any request to <code style={{ background: "#1a1a1a", padding: "1px 6px", borderRadius: 4 }}>api.real.vg</code> from the Real app, then paste the full raw request below.
-        </p>
-        <textarea
-          value={raw} onChange={e => setRaw(e.target.value)}
-          placeholder={"GET /user/username?... HTTP/1.1\nHost: api.real.vg\nreal-auth-info: ...\nreal-device-uuid: ..."}
-          style={{ width: "100%", height: 150, background: "#0a0a0a", border: `1px solid ${C.border2}`, borderRadius: 10, color: "#aaa", fontFamily: "monospace", fontSize: 11, padding: 12, resize: "none", outline: "none", lineHeight: 1.6 }}
-        />
-        {valid && (
-          <div style={{ marginTop: 8, padding: "8px 12px", background: "#081a08", borderRadius: 8, border: "1px solid #155a15" }}>
-            <p style={{ color: C.green, fontFamily: ff.b, fontSize: 12 }}>✓ Real app request detected</p>
-          </div>
-        )}
-        {err && <p style={{ color: C.accent, fontFamily: ff.b, fontSize: 12, marginTop: 8 }}>{err}</p>}
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "13px 0", borderRadius: 8, border: `1px solid ${C.border2}`, background: "transparent", color: C.muted, cursor: "pointer", fontFamily: ff.h, fontWeight: 700, fontSize: 15 }}>Cancel</button>
-          <button onClick={handle} disabled={!valid || loading} style={{ flex: 2, padding: "13px 0", borderRadius: 8, border: "none", background: valid ? "#fff" : C.dim, color: "#000", cursor: valid ? "pointer" : "default", fontFamily: ff.h, fontWeight: 800, fontSize: 15 }}>
-            {loading ? "Connecting..." : "Connect"}
-          </button>
-        </div>
-      </div>
+  return <div className="modalWrap"><div className="modal">
+    <div className="panelHead"><h2>Connect Real account</h2><button className="smallBtn" onClick={onClose}>Close</button></div>
+    <div className="panelBody">
+      <p>Paste a complete captured request to <code>api.real.vg</code>. ReavesBot uses its authentication headers and attempts to resolve the signed-in username.</p>
+      <textarea className="raw" value={raw} onChange={e=>setRaw(e.target.value)} placeholder={"GET /... HTTP/1.1\nHost: api.real.vg\nreal-auth-info: ..."}/>
+      {error && <div className="errorBox">{error}</div>}
+      <div className="toolbar" style={{justifyContent:"flex-end"}}><button className="btn" onClick={onClose}>Cancel</button><button className="btn btnPrimary" disabled={!valid||loading} onClick={connect}>{loading?"Connecting...":"Connect account"}</button></div>
     </div>
-  );
+  </div></div>;
 }
 
-// ── LOG ENTRY ─────────────────────────────────
-function LogEntry({ msg, type }) {
-  const colors = {
-    checking: C.muted,
-    available: C.green,
-    claimed: C.green,
-    claim_failed: C.accent,
-    stopped: C.yellow,
-    log: "#aaa",
-    error: C.accent,
-    auth_error: C.accent,
-    started: C.yellow,
-    done: C.green,
-  };
-  return (
-    <div style={{ padding: "4px 0", fontFamily: "monospace", fontSize: 12, color: colors[type] || "#aaa", lineHeight: 1.6, borderBottom: `1px solid #111` }}>
-      <span style={{ color: "#444", marginRight: 8 }}>{new Date().toLocaleTimeString()}</span>
-      {msg}
-    </div>
-  );
-}
-
-// ── MAIN APP ──────────────────────────────────
 export default function App() {
-  const [creds, setCreds] = useState(() => {
-    try {
-      const saved = localStorage.getItem("realCreds");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      localStorage.removeItem("realCreds");
-      return null;
-    }
-  });
+  const [creds, setCreds] = useState(() => { try { return JSON.parse(localStorage.getItem("realCreds")) || null; } catch { return null; } });
   const [showConnect, setShowConnect] = useState(false);
-  const [username, setUsername] = useState("");
-  const [interval, setInterval_] = useState("5");
-  const [running, setRunning] = useState(false);
-  const [logs, setLogs] = useState([]);
-  const [result, setResult] = useState(null);
-  const [jobId, setJobId] = useState(null);
+  const [input, setInput] = useState("");
+  const [interval, setIntervalValue] = useState("5");
   const [checking, setChecking] = useState(false);
-  const [checkResult, setCheckResult] = useState(null);
-  const logsRef = useRef();
+  const [running, setRunning] = useState(false);
+  const [jobId, setJobId] = useState(null);
+  const [results, setResults] = useState({});
+  const [logs, setLogs] = useState([]);
+  const logRef = useRef(null);
+  const usernames = useMemo(() => cleanNames(input), [input]);
 
-  useEffect(() => {
-    if (logsRef.current) logsRef.current.scrollTop = logsRef.current.scrollHeight;
-  }, [logs]);
+  const counts = useMemo(() => Object.values(results).reduce((a,r)=>{ a.total++; if(r.available===true)a.available++; else if(r.available===false)a.taken++; else if(r.error)a.errors++; return a; },{total:0,available:0,taken:0,errors:0}),[results]);
 
-  const addLog = (msg, type) => setLogs(l => [...l, { msg, type, id: Date.now() + Math.random() }]);
+  useEffect(()=>{ if(logRef.current) logRef.current.scrollTop=logRef.current.scrollHeight; },[logs]);
+  useEffect(()=>{
+    if (!creds || creds.accountUsername) return;
+    fetch("/api/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({creds})}).then(r=>r.json()).then(data=>{
+      if(data.accountUsername){ const next={...creds,accountUsername:data.accountUsername}; setCreds(next); localStorage.setItem("realCreds",JSON.stringify(next)); }
+    }).catch(()=>{});
+  },[creds]);
 
-  const disconnectExpiredSession = () => {
-    localStorage.removeItem("realCreds");
-    setCreds(null);
-  };
+  function addLog(type, message) { setLogs(old=>[...old,{id:`${Date.now()}-${Math.random()}`,time:new Date().toLocaleTimeString(),type,message}]); }
+  function expire() { localStorage.removeItem("realCreds"); setCreds(null); setRunning(false); setShowConnect(true); }
 
-  // Check once
-  const handleCheck = async () => {
-    if (!creds || !username.trim()) return;
+  async function checkAll() {
+    if(!creds||!usernames.length)return;
     setChecking(true);
-    setCheckResult(null);
+    setResults(Object.fromEntries(usernames.map(username=>[username,{username,status:"checking"}])));
+    try{
+      const response=await fetch("/api/check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usernames,creds})});
+      const data=await response.json();
+      if(response.status===401||response.status===403||data.authError){ addLog("auth","Session expired. Reconnect your account."); expire(); return; }
+      if(!response.ok) throw new Error(data.error||`Check failed (${response.status})`);
+      const next={}; data.results.forEach(item=>{next[item.username]=item;}); setResults(next);
+      addLog("check",`Checked ${data.results.length} usernames.`);
+    }catch(e){ addLog("error",e.message); }
+    finally{setChecking(false);}
+  }
 
-    try {
-      const r = await fetch("/api/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), creds }),
-      });
-      const data = await r.json();
-
-      if (r.status === 401 || r.status === 403 || data.authError) {
-        disconnectExpiredSession();
-        setCheckResult({ error: data.error || "Your session expired. Reconnect your account." });
-        setShowConnect(true);
-        return;
+  async function start() {
+    if(!creds||!usernames.length)return;
+    setRunning(true); setLogs([]); setResults(Object.fromEntries(usernames.map(username=>[username,{username,status:"queued"}])));
+    try{
+      const response=await fetch("/api/snipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usernames,creds,interval:Number(interval)*1000})});
+      if(!response.ok||!response.body){ const data=await response.json().catch(()=>({})); throw new Error(data.error||`Could not start (${response.status})`); }
+      const reader=response.body.getReader(); const decoder=new TextDecoder(); let buffer="";
+      while(true){ const {done,value}=await reader.read(); if(done)break; buffer+=decoder.decode(value,{stream:true}); const chunks=buffer.split("\n\n"); buffer=chunks.pop();
+        for(const chunk of chunks){ const line=chunk.split("\n").find(x=>x.startsWith("data: ")); if(!line)continue; const event=JSON.parse(line.slice(6));
+          if(event.jobId)setJobId(event.jobId); if(event.message)addLog(event.type,event.message);
+          if(event.username&&["taken","available","claimed","claim_failed","error"].includes(event.type)) setResults(old=>({...old,[event.username]:{username:event.username,available:event.available,error:event.type==="error"?event.message:null,status:event.type}}));
+          if(event.type==="auth_error"){expire();return;}
+        }
       }
+    }catch(e){addLog("error",e.message);}finally{setRunning(false);setJobId(null);}
+  }
 
-      if (!r.ok || data.error) {
-        setCheckResult({ error: data.error || `Request failed (${r.status})` });
-        return;
-      }
+  async function stop(){ if(jobId) await fetch("/api/stop",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobId})}); setRunning(false); }
+  function disconnect(){localStorage.removeItem("realCreds");setCreds(null);}
 
-      setCheckResult(data);
-    } catch (error) {
-      setCheckResult({ error: error.message || "Could not reach the server." });
-    } finally {
-      setChecking(false);
-    }
-  };
-
-  // Start snipe
-  const handleStart = async () => {
-    if (!creds || !username.trim()) return;
-    setRunning(true); setLogs([]); setResult(null);
-
-    const r = await fetch("/api/snipe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim(), creds, interval: parseInt(interval) * 1000 || 5000 }),
-    });
-
-    if (!r.ok || !r.body) {
-      let message = `Could not start (${r.status})`;
-      try {
-        const data = await r.json();
-        message = data.error || message;
-      } catch (_) {}
-      addLog(message, "error");
-      if (r.status === 401 || r.status === 403) {
-        disconnectExpiredSession();
-        setShowConnect(true);
-      }
-      setRunning(false);
-      return;
-    }
-
-    const reader = r.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value);
-      const parts = buf.split("\n\n");
-      buf = parts.pop();
-      for (const part of parts) {
-        const line = part.replace("data: ", "").trim();
-        if (!line) continue;
-        try {
-          const evt = JSON.parse(line);
-          if (evt.jobId) setJobId(evt.jobId);
-          if (evt.message) addLog(evt.message, evt.type);
-          if (evt.type === "auth_error") {
-            disconnectExpiredSession();
-            setShowConnect(true);
-          }
-          if (evt.type === "done" || evt.type === "claimed" || evt.type === "stopped") {
-            setResult({ success: evt.success, message: evt.message });
-          }
-        } catch (_) {}
-      }
-    }
-    setRunning(false);
-  };
-
-  const handleStop = async () => {
-    if (!jobId) { setRunning(false); return; }
-    await fetch("/api/stop", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId }),
-    });
-    setRunning(false);
-  };
-
-  return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
-      <style>{css}</style>
-
-      {/* Header */}
-      <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "rgba(0,0,0,.9)", backdropFilter: "blur(12px)", zIndex: 50 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, background: C.accent, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: ff.h, fontWeight: 900, fontSize: 16 }}>R</div>
-          <span style={{ fontFamily: ff.h, fontWeight: 900, fontSize: 20, letterSpacing: "0.01em" }}>ReavesBot</span>
+  return <div className="app"><style>{css}</style>
+    <header className="topbar"><div className="brand"><div className="mark">RB</div><span>ReavesBot</span></div>
+      {creds?<div className="account"><span className="dot"/><span>{creds.accountUsername?`@${creds.accountUsername}`:"Connected account"}</span><button className="smallBtn" onClick={disconnect}>Disconnect</button></div>:<button className="btn btnPrimary" onClick={()=>setShowConnect(true)}>Connect account</button>}
+    </header>
+    <main className="shell">
+      <div className="eyebrow">Username operations console</div><h1 className="heading">Monitor multiple targets from one session.</h1><p className="sub">Check up to 50 usernames, review each result, and run one shared monitoring job.</p>
+      <div className="grid">
+        <section className="panel"><div className="panelHead"><span className="panelTitle">Targets</span><span className="eyebrow">{usernames.length}/50 loaded</span></div><div className="panelBody">
+          <label className="label">Usernames</label><textarea className="textarea" value={input} onChange={e=>setInput(e.target.value)} placeholder={"chaeyeon\nusername_two\nusername_three"}/><div className="hint">Separate names with spaces, commas, or new lines. Leading @ symbols are removed automatically.</div>
+          <div className="toolbar"><select className="select" value={interval} onChange={e=>setIntervalValue(e.target.value)}><option value="3">3 second interval</option><option value="5">5 second interval</option><option value="10">10 second interval</option><option value="30">30 second interval</option><option value="60">60 second interval</option></select><button className="btn" disabled={!creds||!usernames.length||checking||running} onClick={checkAll}>{checking?"Checking...":"Check all"}</button>{running?<button className="btn btnDanger" onClick={stop}>Stop monitor</button>:<button className="btn btnPrimary" disabled={!creds||!usernames.length} onClick={start}>Start monitor</button>}</div>
+          <div className="statusRow"><div className="metric"><div className="metricValue">{counts.total||usernames.length}</div><div className="metricLabel">Targets</div></div><div className="metric"><div className="metricValue">{counts.available}</div><div className="metricLabel">Available</div></div><div className="metric"><div className="metricValue">{counts.taken}</div><div className="metricLabel">Taken</div></div><div className="metric"><div className="metricValue">{counts.errors}</div><div className="metricLabel">Errors</div></div></div>
         </div>
-        {creds ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.green, boxShadow: `0 0 8px ${C.green}` }} />
-            <span style={{ fontFamily: ff.b, fontSize: 13, color: "#aaa" }}>{creds.deviceName || "Connected"}</span>
-            <button   onClick={() => {     localStorage.removeItem("realCreds");     setCreds(null);   }} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 18, lineHeight: 1 }}>✕</button>
-          </div>
-        ) : (
-          <button onClick={() => setShowConnect(true)} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: C.accent, color: "#fff", cursor: "pointer", fontFamily: ff.h, fontWeight: 800, fontSize: 14 }}>Connect Account</button>
-        )}
+        <div className="panelHead"><span className="panelTitle">Current results</span><button className="smallBtn" onClick={()=>setResults({})}>Clear</button></div><div className="results">{Object.keys(results).length?Object.values(results).map(r=><div className="resultRow" key={r.username}><span className="user">@{r.username}</span><span className={`state ${r.error?"error":r.available===true?"available":r.available===false?"taken":"pending"}`}>{r.error?"Error":r.status==="claimed"?"Claimed":r.available===true?"Available":r.available===false?"Taken":r.status||"Pending"}</span><button className="smallBtn" onClick={()=>setInput(r.username)}>Focus</button></div>):<div className="empty">No checks have run yet.</div>}</div>
+        </section>
+        <section className="panel"><div className="panelHead"><span className="panelTitle">Live activity</span><button className="smallBtn" onClick={()=>setLogs([])}>Clear</button></div><div className="logs" ref={logRef}>{logs.length?logs.map(log=><div className={`log ${["claimed","available"].includes(log.type)?"success":["waiting","checking","started"].includes(log.type)?"warn":["error","auth_error","claim_failed"].includes(log.type)?"fail":""}`} key={log.id}><span className="time">{log.time}</span><span className="type">{log.type}</span><span>{log.message}</span></div>):<div className="empty">Activity will appear here while checking or monitoring.</div>}</div></section>
       </div>
-
-      {/* Main content */}
-      <div style={{ maxWidth: 560, margin: "0 auto", padding: "32px 24px" }} className="fade-up">
-
-        {/* Hero */}
-        <div style={{ marginBottom: 32, textAlign: "center" }}>
-          <h1 style={{ fontFamily: ff.h, fontSize: 36, fontWeight: 900, marginBottom: 8 }}>Username Sniper</h1>
-          <p style={{ color: C.muted, fontFamily: ff.b, fontSize: 14, lineHeight: 1.6 }}>
-            Continuously monitors a username on the Real app.<br />The moment it's available, it claims it instantly.
-          </p>
-        </div>
-
-        {/* Input card */}
-        <div style={{ background: C.surface, borderRadius: 16, padding: 24, border: `1px solid ${C.border}`, marginBottom: 16 }}>
-
-          {/* Username input */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontFamily: ff.h, fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", color: C.muted, marginBottom: 8, textTransform: "uppercase" }}>Target Username</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <div style={{ flex: 1, display: "flex", alignItems: "center", background: "#0d0d0d", border: `1px solid ${C.border2}`, borderRadius: 8, padding: "0 14px" }}>
-                <span style={{ color: C.muted, fontFamily: ff.b, fontSize: 15, marginRight: 4 }}>@</span>
-                <input
-                  value={username} onChange={e => { setUsername(e.target.value); setCheckResult(null); }}
-                  placeholder="username"
-                  style={{ flex: 1, padding: "12px 0", background: "transparent", border: "none", color: C.text, fontFamily: ff.b, fontSize: 15, outline: "none" }}
-                />
-              </div>
-              <button onClick={handleCheck} disabled={!creds || !username.trim() || checking} style={{
-                padding: "12px 16px", borderRadius: 8, border: `1px solid ${C.border2}`,
-                background: "#0d0d0d", color: C.text, cursor: creds && username.trim() ? "pointer" : "default",
-                fontFamily: ff.h, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6,
-                opacity: creds && username.trim() ? 1 : 0.5,
-              }}>
-                {checking ? <Spinner /> : "Check"}
-              </button>
-            </div>
-
-            {/* Check result */}
-            {checkResult && (
-              <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 8, background: checkResult.available === true ? "#081a08" : "#1a0808", border: `1px solid ${checkResult.available === true ? "#155a15" : "#4a1515"}` }}>
-                <p style={{ color: checkResult.available === true ? C.green : C.accent, fontFamily: ff.b, fontSize: 13 }}>
-                  {checkResult.error
-                    ? checkResult.error
-                    : checkResult.available === true
-                      ? `✓ @${username} is available!`
-                      : checkResult.available === false
-                        ? `✗ @${username} is taken`
-                        : "Could not determine availability."}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Check interval */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontFamily: ff.h, fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", color: C.muted, marginBottom: 8, textTransform: "uppercase" }}>Check Interval (seconds)</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              {["3", "5", "10", "30", "60"].map(s => (
-                <button key={s} onClick={() => setInterval_(s)} style={{
-                  flex: 1, padding: "10px 0", borderRadius: 8, cursor: "pointer",
-                  border: interval === s ? "none" : `1px solid ${C.border2}`,
-                  background: interval === s ? C.accent : "#0d0d0d",
-                  color: interval === s ? "#fff" : C.muted,
-                  fontFamily: ff.h, fontWeight: 700, fontSize: 13,
-                }}>{s}s</button>
-              ))}
-            </div>
-            <p style={{ color: C.dim, fontFamily: ff.b, fontSize: 11, marginTop: 6 }}>Lower = faster but higher rate limit risk. 5s recommended.</p>
-          </div>
-
-          {/* Start/Stop button */}
-          {!creds ? (
-            <button onClick={() => setShowConnect(true)} style={{ width: "100%", padding: "15px 0", borderRadius: 10, border: "none", background: C.accent, color: "#fff", cursor: "pointer", fontFamily: ff.h, fontWeight: 800, fontSize: 16 }}>
-              Connect Account to Start
-            </button>
-          ) : running ? (
-            <button onClick={handleStop} style={{ width: "100%", padding: "15px 0", borderRadius: 10, border: "none", background: "#1a1a1a", color: C.accent, cursor: "pointer", fontFamily: ff.h, fontWeight: 800, fontSize: 16, border: `1px solid ${C.accent}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-              <div style={{ width: 10, height: 10, background: C.accent, borderRadius: 2, animation: "pulse 1s infinite" }} />
-              Sniping @{username}... — Stop
-            </button>
-          ) : (
-            <button onClick={handleStart} disabled={!username.trim()} style={{ width: "100%", padding: "15px 0", borderRadius: 10, border: "none", background: username.trim() ? "#fff" : C.dim, color: "#000", cursor: username.trim() ? "pointer" : "default", fontFamily: ff.h, fontWeight: 800, fontSize: 16, opacity: username.trim() ? 1 : 0.6 }}>
-              ▶ Start Sniping
-            </button>
-          )}
-        </div>
-
-        {/* Result banner */}
-        {result && (
-          <div style={{ padding: "16px 20px", borderRadius: 12, background: result.success ? "#081a08" : "#1a0808", border: `1px solid ${result.success ? "#155a15" : "#4a1515"}`, marginBottom: 16 }}>
-            <p style={{ color: result.success ? C.green : C.accent, fontFamily: ff.h, fontWeight: 700, fontSize: 18 }}>
-              {result.success ? "🎉 Username Claimed!" : "❌ Claim Failed"}
-            </p>
-            <p style={{ color: result.success ? "#aaa" : "#888", fontFamily: ff.b, fontSize: 13, marginTop: 4 }}>{result.message}</p>
-          </div>
-        )}
-
-        {/* Logs */}
-        {logs.length > 0 && (
-          <div style={{ background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: ff.h, fontWeight: 700, fontSize: 13, color: C.muted }}>ACTIVITY LOG</span>
-              <button onClick={() => setLogs([])} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", fontFamily: ff.b, fontSize: 12 }}>Clear</button>
-            </div>
-            <div ref={logsRef} style={{ maxHeight: 300, overflowY: "auto", padding: "8px 16px" }}>
-              {logs.map(l => <LogEntry key={l.id} msg={l.msg} type={l.type} />)}
-            </div>
-          </div>
-        )}
-
-        {/* Info cards */}
-        {!running && logs.length === 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
-            {[
-              { emoji: "👀", title: "Watches 24/7", desc: "Checks the username on an interval you set" },
-              { emoji: "⚡", title: "Instant Claim", desc: "The moment it's free, claims it automatically" },
-              { emoji: "🔔", title: "Real-time logs", desc: "See every check and result as it happens" },
-              { emoji: "🔒", title: "Your creds", desc: "Saved in this browser until you disconnect or they expire" },
-            ].map(c => (
-              <div key={c.title} style={{ background: C.surface, borderRadius: 12, padding: 16, border: `1px solid ${C.border}` }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>{c.emoji}</div>
-                <div style={{ fontFamily: ff.h, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{c.title}</div>
-                <div style={{ color: C.muted, fontFamily: ff.b, fontSize: 12, lineHeight: 1.5 }}>{c.desc}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {showConnect && (   <ConnectModal     onConnect={c => {       localStorage.setItem("realCreds", JSON.stringify(c));       setCreds(c);       setShowConnect(false);     }}     onClose={() => setShowConnect(false)}   /> )}
-    </div>
-  );
+    </main>
+    {showConnect&&<ConnectModal onClose={()=>setShowConnect(false)} onConnect={data=>{localStorage.setItem("realCreds",JSON.stringify(data));setCreds(data);setShowConnect(false);}}/>}
+  </div>;
 }
