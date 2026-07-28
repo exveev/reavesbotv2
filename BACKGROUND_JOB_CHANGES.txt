@@ -1,0 +1,13 @@
+ReavesBot background monitoring update
+
+- Monitoring now runs in a detached server-side job instead of inside the browser's request.
+- Closing or refreshing the browser does not stop a running job while the server remains online.
+- The browser restores the latest job, results, logs, cycle count, and target list on load.
+- Live updates use a separate SSE endpoint with 15-second heartbeats.
+- Results and logs are retained in server memory (up to 500 events).
+- Temporary authentication failures require three consecutive failures before the job stops.
+- Real API check and claim requests have 15-second timeouts.
+- Account username lookup was removed.
+- The invalid multiline placeholder escape remains fixed.
+
+Limitation: jobs are stored in memory and do not survive a server restart or a sleeping host.
