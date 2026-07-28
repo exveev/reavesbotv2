@@ -223,7 +223,9 @@ app.post("/api/snipe", async (req, res) => {
   if (!usernames.length || !creds) return res.status(400).json({ error: "Missing usernames or creds" });
 
   res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("X-Accel-Buffering","no");
+  if (typeof res.flushHeaders==="function") res.flushHeaders();
   res.setHeader("Connection", "keep-alive");
 
   const send = (type, data = {}) => {
@@ -231,7 +233,8 @@ app.post("/api/snipe", async (req, res) => {
   };
 
   const jobId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  jobs[jobId] = { running: true };
+  jobs[jobId]={running:true};
+  const heartbeat=setInterval(()=>{try{res.write(`: ping ${Date.now()}\n\n`)}catch(e){}},15000);
   send("started", { jobId, usernames, message: `Monitoring ${usernames.length} username${usernames.length === 1 ? "" : "s"}.` });
 
   let cycle = 0;
@@ -244,9 +247,8 @@ app.post("/api/snipe", async (req, res) => {
       const result = await checkUsername(username, creds);
 
       if (result.authError) {
-        send("auth_error", { username, status: result.status, message: result.error });
-        jobs[jobId].running = false;
-        break;
+        send("warning",{username,message:"Temporary auth failure; retrying."});
+        continue;
       }
       if (result.error) {
         send("error", { username, message: `@${username}: ${result.error}` });
@@ -274,6 +276,7 @@ app.post("/api/snipe", async (req, res) => {
     }
   }
 
+  clearInterval(heartbeat);
   if (jobs[jobId]) delete jobs[jobId];
   res.end();
 });

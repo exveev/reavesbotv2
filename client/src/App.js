@@ -53,12 +53,7 @@ export default function App() {
   const counts = useMemo(() => Object.values(results).reduce((a,r)=>{ a.total++; if(r.available===true)a.available++; else if(r.available===false)a.taken++; else if(r.error)a.errors++; return a; },{total:0,available:0,taken:0,errors:0}),[results]);
 
   useEffect(()=>{ if(logRef.current) logRef.current.scrollTop=logRef.current.scrollHeight; },[logs]);
-  useEffect(()=>{
-    if (!creds || creds.accountUsername) return;
-    fetch("/api/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({creds})}).then(r=>r.json()).then(data=>{
-      if(data.accountUsername){ const next={...creds,accountUsername:data.accountUsername}; setCreds(next); localStorage.setItem("realCreds",JSON.stringify(next)); }
-    }).catch(()=>{});
-  },[creds]);
+  
 
   function addLog(type, message) { setLogs(old=>[...old,{id:`${Date.now()}-${Math.random()}`,time:new Date().toLocaleTimeString(),type,message}]); }
   function expire() { localStorage.removeItem("realCreds"); setCreds(null); setRunning(false); setShowConnect(true); }
