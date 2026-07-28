@@ -1,0 +1,12 @@
+Fixes applied for false "username taken" results and 401 errors:
+
+1. server/index.js no longer treats 401/403 responses as username taken.
+2. /api/check now forwards authentication failures using HTTP 401/403.
+3. The SSE snipe route emits auth_error and stops instead of repeatedly saying taken.
+4. The captured real-native-request-token is sent unchanged instead of rewriting its prefix.
+5. Axios calculates Content-Length automatically.
+6. client/src/App.js displays authentication/server errors separately from availability.
+7. Expired saved credentials are removed from localStorage and the reconnect modal opens.
+8. Corrupt localStorage credentials are handled safely.
+
+After deploying this version, disconnect/reconnect once with a fresh captured request.
