@@ -100,7 +100,7 @@ export default function App() {
 
   return <div className="app"><style>{css}</style>
     <header className="topbar"><div className="brand"><div className="mark">RB</div><span>ReavesBot</span></div>
-      {creds?<div className="account"><span className="dot"/><span>{creds.accountUsername?`@${creds.accountUsername}`:"Connected account"}</span><button className="smallBtn" onClick={disconnect}>Disconnect</button></div>:<button className="btn btnPrimary" onClick={()=>setShowConnect(true)}>Connect account</button>}
+      {creds?<div className="account"><span className="dot"/><span>Session active</span><button className="smallBtn" onClick={disconnect}>Disconnect</button></div>:<button className="btn btnPrimary" onClick={()=>setShowConnect(true)}>Connect account</button>}
     </header>
     <main className="shell">
       <div className="eyebrow">Username operations console</div><h1 className="heading">Monitor multiple targets from one session.</h1><p className="sub">Check up to 50 usernames, review each result, and run one shared monitoring job.</p>
