@@ -510,7 +510,15 @@ async function addPredictionPosition({ marketId, outcomeId, amount, minSharesExp
       marketId: Number(marketId), outcomeId: Number(outcomeId), amount: Number(amount),
       minSharesExpected: Number(minSharesExpected), orderInstanceId: randomOrderInstanceId()
     }, { headers: makeHeaders(creds), validateStatus: () => true, timeout: 15000 });
-    return { ok: response.status >= 200 && response.status < 300, status: response.status, data: response.data };
+    return {
+  ok: response.status >= 200 && response.status < 300,
+  status: response.status,
+  data: response.data,
+  error:
+    response.status >= 400
+      ? JSON.stringify(response.data)
+      : null
+};
   } catch (error) {
     return { ok: false, status: null, error: error.code === "ECONNABORTED" ? "Prediction request timed out" : error.message };
   }
@@ -542,11 +550,23 @@ async function runPredictionJob(job) {
     }
 
     if (result.status && result.status >= 400 && result.status < 500 && result.status !== 429) {
-      job.state = "failed";
-      job.running = false;
-      predictionLog(job, "error", `Request rejected with status ${result.status}; repeat job stopped.`, { status: result.status });
-      break;
+  job.state = "failed";
+  job.running = false;
+
+  predictionLog(
+    job,
+    "error",
+    `Request rejected with status ${result.status}: ${
+      result.error || JSON.stringify(result.data)
+    }`,
+    {
+      status: result.status,
+      response: result.data
     }
+  );
+
+  break;
+}
 
     const retryMs = Math.min(5000 * (2 ** Math.min(job.consecutiveErrors - 1, 4)), 60000);
     job.state = "retrying";
