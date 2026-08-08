@@ -470,6 +470,149 @@ app.post("/api/stop", (req, res) => {
   res.json({ ok: true, job: publicJob(job) });
 });
 
+
+// Prediction market helpers and controlled repeat jobs.
+const predictionJobs = new Map();
+let currentPredictionJobId = null;
+
+function predictionJobPublic(job) {
+  if (!job) return null;
+  return {
+    id: job.id, running: job.running, state: job.state, marketId: job.marketId,
+    outcomeId: job.outcomeId, amount: job.amount, minSharesExpected: job.minSharesExpected,
+    intervalMs: job.intervalMs, maxRepeats: job.maxRepeats, completed: job.completed,
+    failedAttempts: job.failedAttempts, consecutiveErrors: job.consecutiveErrors,
+    startedAt: job.startedAt, stoppedAt: job.stoppedAt, lastStatus: job.lastStatus,
+    lastError: job.lastError, logs: job.logs
+  };
+}
+
+function predictionLog(job, type, message, extra = {}) {
+  const entry = { id: `${Date.now()}-${Math.random()}`, timestamp: new Date().toISOString(), type, message, ...extra };
+  job.logs.push(entry);
+  if (job.logs.length > 250) job.logs.splice(0, job.logs.length - 250);
+}
+
+function randomOrderInstanceId() {
+  return require("crypto").randomBytes(9).toString("base64url");
+}
+
+async function fetchPredictionMarkets(sport, creds) {
+  const response = await axios.get(`${BASE}/predictions/gamemarkets/${encodeURIComponent(sport)}?_=${Date.now()}`, {
+    headers: makeHeaders(creds), validateStatus: () => true, timeout: 15000
+  });
+  return response;
+}
+
+async function addPredictionPosition({ marketId, outcomeId, amount, minSharesExpected, creds }) {
+  try {
+    const response = await axios.post(`${BASE}/predictions/addposition`, {
+      marketId: Number(marketId), outcomeId: Number(outcomeId), amount: Number(amount),
+      minSharesExpected: Number(minSharesExpected), orderInstanceId: randomOrderInstanceId()
+    }, { headers: makeHeaders(creds), validateStatus: () => true, timeout: 15000 });
+    return { ok: response.status >= 200 && response.status < 300, status: response.status, data: response.data };
+  } catch (error) {
+    return { ok: false, status: null, error: error.code === "ECONNABORTED" ? "Prediction request timed out" : error.message };
+  }
+}
+
+async function runPredictionJob(job) {
+  while (job.running && job.completed < job.maxRepeats) {
+    const result = await addPredictionPosition(job);
+    job.lastStatus = result.status;
+    if (result.ok) {
+      job.completed += 1;
+      job.consecutiveErrors = 0;
+      job.lastError = null;
+      predictionLog(job, "success", `Position ${job.completed}/${job.maxRepeats} accepted.`, { status: result.status });
+      if (!job.running || job.completed >= job.maxRepeats) break;
+      await sleep(job.intervalMs);
+      continue;
+    }
+
+    job.failedAttempts += 1;
+    job.consecutiveErrors += 1;
+    job.lastError = result.error || `Request failed with status ${result.status}`;
+
+    if (result.status === 401 || result.status === 403) {
+      job.state = "reauth_required";
+      job.running = false;
+      predictionLog(job, "auth_error", "Authentication was rejected. Reconnect before continuing.", { status: result.status });
+      break;
+    }
+
+    if (result.status && result.status >= 400 && result.status < 500 && result.status !== 429) {
+      job.state = "failed";
+      job.running = false;
+      predictionLog(job, "error", `Request rejected with status ${result.status}; repeat job stopped.`, { status: result.status });
+      break;
+    }
+
+    const retryMs = Math.min(5000 * (2 ** Math.min(job.consecutiveErrors - 1, 4)), 60000);
+    job.state = "retrying";
+    predictionLog(job, "retry", `${job.lastError}. Retrying in ${Math.round(retryMs / 1000)}s.`, { status: result.status, retryMs });
+    await sleep(retryMs);
+    if (job.running) job.state = "running";
+  }
+
+  if (job.running && job.completed >= job.maxRepeats) job.state = "completed";
+  job.running = false;
+  job.stoppedAt = new Date().toISOString();
+  if (job.state === "running") job.state = "stopped";
+}
+
+app.post("/api/predictions/markets", async (req, res) => {
+  const { creds, sport = "mlb" } = req.body || {};
+  if (!creds) return res.status(400).json({ error: "Missing credentials" });
+  try {
+    const response = await fetchPredictionMarkets(sport, creds);
+    if (response.status === 401 || response.status === 403) return res.status(response.status).json({ error: "Authentication rejected", authError: true });
+    if (response.status < 200 || response.status >= 300) return res.status(response.status).json({ error: `Market fetch failed with status ${response.status}`, details: response.data });
+    res.json({ ok: true, markets: response.data });
+  } catch (error) {
+    res.status(502).json({ error: error.code === "ECONNABORTED" ? "Market fetch timed out" : error.message });
+  }
+});
+
+app.post("/api/predictions/repeat/start", (req, res) => {
+  const { creds, marketId, outcomeId, amount, minSharesExpected, intervalMs = 3000, maxRepeats = 20 } = req.body || {};
+  if (!creds || !marketId || !outcomeId || !Number.isFinite(Number(amount)) || Number(amount) <= 0 || !Number.isFinite(Number(minSharesExpected)) || Number(minSharesExpected) < 0) {
+    return res.status(400).json({ error: "Missing or invalid prediction fields" });
+  }
+  const existing = currentPredictionJobId ? predictionJobs.get(currentPredictionJobId) : null;
+  if (existing?.running) return res.status(409).json({ error: "A prediction repeat job is already running", job: predictionJobPublic(existing) });
+
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const job = {
+    id, creds, marketId: Number(marketId), outcomeId: Number(outcomeId), amount: Number(amount),
+    minSharesExpected: Number(minSharesExpected), intervalMs: Math.max(3000, Number(intervalMs) || 3000),
+    maxRepeats: Math.min(100, Math.max(1, Number(maxRepeats) || 20)), completed: 0, failedAttempts: 0,
+    consecutiveErrors: 0, running: true, state: "running", startedAt: new Date().toISOString(), stoppedAt: null,
+    lastStatus: null, lastError: null, logs: []
+  };
+  predictionJobs.set(id, job);
+  currentPredictionJobId = id;
+  predictionLog(job, "started", `Repeat job started for market ${job.marketId}, outcome ${job.outcomeId}.`);
+  setImmediate(() => runPredictionJob(job));
+  res.status(201).json({ job: predictionJobPublic(job) });
+});
+
+app.get("/api/predictions/repeat/current", (req, res) => {
+  const job = currentPredictionJobId ? predictionJobs.get(currentPredictionJobId) : null;
+  if (!job) return res.status(404).json({ error: "No prediction repeat job found" });
+  res.json({ job: predictionJobPublic(job) });
+});
+
+app.post("/api/predictions/repeat/stop", (req, res) => {
+  const id = req.body?.jobId || currentPredictionJobId;
+  const job = id ? predictionJobs.get(id) : null;
+  if (!job) return res.status(404).json({ error: "Prediction repeat job not found" });
+  job.running = false;
+  job.state = "stopping";
+  predictionLog(job, "stop_requested", "Stop requested.");
+  res.json({ ok: true, job: predictionJobPublic(job) });
+});
+
 app.use(express.static(path.join(__dirname, "../client/build")));
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build/index.html"));

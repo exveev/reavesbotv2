@@ -1,0 +1,14 @@
+Added a separate Predictions tab alongside Username Monitor.
+
+Predictions:
+- Fetches MLB markets through /api/predictions/markets.
+- Attempts to recognize market/outcome objects from the returned JSON.
+- Lets the user select an outcome and configure amount, min shares, interval, and repeat cap.
+- Controlled repeat job runs server-side with a 3-second minimum interval and 100-repeat maximum per start.
+- Temporary network/5xx/429 failures retry with exponential backoff up to 60 seconds.
+- 401/403 authentication failures stop and require reconnect.
+- Other 4xx invalid requests stop instead of looping forever.
+- Stop button halts the repeat job.
+- Prediction status is polled so the page can restore the current job after refresh.
+
+Existing username monitoring/background jobs remain available in their own tab.

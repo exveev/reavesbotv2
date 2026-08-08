@@ -2,310 +2,53 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const css = `
 :root{--bg:#0b0d10;--panel:#111419;--panel2:#0e1115;--line:#242a33;--line2:#343c48;--text:#f4f6f8;--muted:#8b96a5;--dim:#596575;--accent:#ef476f;--green:#35c98a;--yellow:#e8b44f}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.topbar{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;background:rgba(11,13,16,.94);backdrop-filter:blur(14px);z-index:10}.brand{display:flex;align-items:center;gap:11px;font-weight:760}.mark{width:28px;height:28px;border:1px solid var(--line2);display:grid;place-items:center;font-family:monospace;font-size:12px}.account{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px}.dot{width:7px;height:7px;border-radius:50%;background:var(--green)}.shell{max-width:1180px;margin:0 auto;padding:28px 24px 48px}.eyebrow{font-family:monospace;font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}.heading{font-size:30px;letter-spacing:-.045em;margin:6px 0}.sub{color:var(--muted);font-size:14px;margin:0}.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:16px;margin-top:24px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}.panelHead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.panelTitle{font-size:13px;font-weight:700}.panelBody{padding:16px}.label{display:block;font-family:monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}.textarea{width:100%;min-height:126px;resize:vertical;background:var(--panel2);border:1px solid var(--line2);border-radius:5px;color:var(--text);padding:12px;outline:none;line-height:1.55}.textarea:focus{border-color:#667386}.hint{font-size:12px;color:var(--dim);margin-top:7px}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px}.select{background:var(--panel2);color:var(--text);border:1px solid var(--line2);border-radius:5px;padding:10px 11px}.btn{border:1px solid var(--line2);border-radius:5px;background:var(--panel2);color:var(--text);padding:10px 14px;font-weight:650}.btnPrimary{background:var(--text);color:#0b0d10;border-color:var(--text)}.btnDanger{border-color:#653143;color:#ff7897}.btn:disabled{opacity:.42;cursor:not-allowed}.statusRow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.metric{border-left:2px solid var(--line2);padding:8px 10px;background:var(--panel2)}.metricValue{font-size:18px;font-weight:730}.metricLabel{font-family:monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:3px}.results{display:flex;flex-direction:column}.resultRow{display:grid;grid-template-columns:minmax(0,1fr) 110px 78px;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px}.resultRow:last-child{border-bottom:0}.user{font-family:monospace}.state{font-size:11px;text-transform:uppercase;letter-spacing:.08em}.available{color:var(--green)}.taken{color:var(--muted)}.error{color:var(--accent)}.pending{color:var(--yellow)}.smallBtn{border:0;background:transparent;color:var(--muted);font-size:12px;text-align:right}.logs{height:390px;overflow:auto;background:#0a0c0f;font-family:monospace;font-size:11px}.log{display:grid;grid-template-columns:82px 92px 1fr;gap:8px;padding:7px 12px;border-bottom:1px solid #171b21;color:#b9c1cc}.time{color:#596575}.type{color:#7f8b9b;text-transform:uppercase}.log.success{border-left:2px solid var(--green)}.log.warn{border-left:2px solid var(--yellow)}.log.fail{border-left:2px solid var(--accent)}.empty{padding:38px 18px;text-align:center;color:var(--dim);font-size:13px}.notice{border-left:2px solid var(--yellow);background:#18150e;color:#d7c28f;padding:10px 12px;font-size:12px;margin-top:12px}.modalWrap{position:fixed;inset:0;background:rgba(3,4,6,.82);display:grid;place-items:center;padding:20px;z-index:30}.modal{width:min(560px,100%);background:var(--panel);border:1px solid var(--line2);border-radius:8px}.modal h2{font-size:20px;margin:0}.modal p{font-size:13px;color:var(--muted);line-height:1.6}.raw{width:100%;height:180px;background:#090b0e;color:#c5ced9;border:1px solid var(--line2);border-radius:5px;padding:11px;font-family:monospace;font-size:11px;resize:none}.errorBox{border-left:2px solid var(--accent);background:#1a1115;color:#ff8aa3;padding:10px 12px;font-size:12px;margin-top:10px}@media(max-width:860px){.grid{grid-template-columns:1fr}.statusRow{grid-template-columns:repeat(2,1fr)}.topbar{padding:0 16px}.shell{padding:22px 16px}.resultRow{grid-template-columns:minmax(0,1fr) 92px 52px}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}.app{min-height:100vh}.topbar{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;background:rgba(11,13,16,.94);backdrop-filter:blur(14px);z-index:10}.brand{display:flex;align-items:center;gap:11px;font-weight:760}.mark{width:28px;height:28px;border:1px solid var(--line2);display:grid;place-items:center;font-family:monospace;font-size:12px}.account{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px}.dot{width:7px;height:7px;border-radius:50%;background:var(--green)}.shell{max-width:1180px;margin:0 auto;padding:28px 24px 48px}.tabs{display:flex;gap:6px;margin-bottom:24px}.tab{border:1px solid var(--line);background:transparent;color:var(--muted);padding:9px 13px;border-radius:5px}.tab.active{background:var(--text);color:var(--bg);border-color:var(--text)}.eyebrow{font-family:monospace;font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}.heading{font-size:30px;letter-spacing:-.045em;margin:6px 0}.sub{color:var(--muted);font-size:14px;margin:0}.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:16px;margin-top:24px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}.panelHead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.panelTitle{font-size:13px;font-weight:700}.panelBody{padding:16px}.label{display:block;font-family:monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:12px 0 8px}.textarea,.input,.select{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:5px;color:var(--text);padding:10px 11px;outline:none}.textarea{min-height:126px;resize:vertical;line-height:1.55}.textarea:focus,.input:focus,.select:focus{border-color:#667386}.hint{font-size:12px;color:var(--dim);margin-top:7px}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px}.toolbar .select{width:auto}.btn{border:1px solid var(--line2);border-radius:5px;background:var(--panel2);color:var(--text);padding:10px 14px;font-weight:650}.btnPrimary{background:var(--text);color:#0b0d10;border-color:var(--text)}.btnDanger{border-color:#653143;color:#ff7897}.btn:disabled{opacity:.42;cursor:not-allowed}.statusRow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.metric{border-left:2px solid var(--line2);padding:8px 10px;background:var(--panel2)}.metricValue{font-size:18px;font-weight:730}.metricLabel{font-family:monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:3px}.results{display:flex;flex-direction:column}.resultRow{display:grid;grid-template-columns:minmax(0,1fr) 110px 78px;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);font-size:13px}.user{font-family:monospace}.state{font-size:11px;text-transform:uppercase;letter-spacing:.08em}.available{color:var(--green)}.taken{color:var(--muted)}.error{color:var(--accent)}.pending{color:var(--yellow)}.smallBtn{border:0;background:transparent;color:var(--muted);font-size:12px;text-align:right}.logs{height:390px;overflow:auto;background:#0a0c0f;font-family:monospace;font-size:11px}.log{display:grid;grid-template-columns:82px 92px 1fr;gap:8px;padding:7px 12px;border-bottom:1px solid #171b21;color:#b9c1cc}.time{color:#596575}.type{color:#7f8b9b;text-transform:uppercase}.log.success{border-left:2px solid var(--green)}.log.warn{border-left:2px solid var(--yellow)}.log.fail{border-left:2px solid var(--accent)}.empty{padding:38px 18px;text-align:center;color:var(--dim);font-size:13px}.notice{border-left:2px solid var(--yellow);background:#18150e;color:#d7c28f;padding:10px 12px;font-size:12px;margin-top:12px}.modalWrap{position:fixed;inset:0;background:rgba(3,4,6,.82);display:grid;place-items:center;padding:20px;z-index:30}.modal{width:min(560px,100%);background:var(--panel);border:1px solid var(--line2);border-radius:8px}.modal h2{font-size:20px;margin:0}.modal p{font-size:13px;color:var(--muted);line-height:1.6}.raw{width:100%;height:180px;background:#090b0e;color:#c5ced9;border:1px solid var(--line2);border-radius:5px;padding:11px;font-family:monospace;font-size:11px;resize:none}.errorBox{border-left:2px solid var(--accent);background:#1a1115;color:#ff8aa3;padding:10px 12px;font-size:12px;margin-top:10px}.marketList{max-height:440px;overflow:auto}.market{padding:12px 14px;border-bottom:1px solid var(--line)}.marketTitle{font-weight:650;font-size:13px}.marketMeta{font-family:monospace;color:var(--muted);font-size:11px;margin-top:5px}.outcomeBtn{margin:7px 7px 0 0;border:1px solid var(--line2);background:var(--panel2);color:var(--text);padding:7px 9px;border-radius:4px}.outcomeBtn.selected{border-color:var(--green);color:var(--green)}.twoCol{display:grid;grid-template-columns:1fr 1fr;gap:10px}.codebox{white-space:pre-wrap;word-break:break-word;font:11px monospace;color:var(--muted);max-height:260px;overflow:auto}@media(max-width:860px){.grid,.twoCol{grid-template-columns:1fr}.statusRow{grid-template-columns:repeat(2,1fr)}.topbar{padding:0 16px}.shell{padding:22px 16px}.resultRow{grid-template-columns:minmax(0,1fr) 92px 52px}}
 `;
 
-function cleanNames(value) {
-  return [...new Set(value.split(/[\s,]+/).map(v => v.trim().replace(/^@+/, "")).filter(Boolean))].slice(0, 50);
+function cleanNames(value){return [...new Set(value.split(/[\s,]+/).map(v=>v.trim().replace(/^@+/,"")).filter(Boolean))].slice(0,50)}
+function mapResults(results){if(!results)return{};return Array.isArray(results)?Object.fromEntries(results.map(x=>[x.username,x])):results}
+
+function ConnectModal({onConnect,onClose}){
+  const[raw,setRaw]=useState("");const[error,setError]=useState("");const[loading,setLoading]=useState(false);const valid=raw.toLowerCase().includes("real-auth-info");
+  async function connect(){setLoading(true);setError("");try{const r=await fetch("/api/parse-creds",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({raw})});const d=await r.json();if(!r.ok||d.error)throw new Error(d.error||"Could not connect account");onConnect(d)}catch(e){setError(e.message)}finally{setLoading(false)}}
+  return <div className="modalWrap"><div className="modal"><div className="panelHead"><h2>Connect Real account</h2><button className="smallBtn" onClick={onClose}>Close</button></div><div className="panelBody"><p>Paste a complete captured request to <code>api.real.vg</code>. Parsed headers are stored in this browser.</p><textarea className="raw" value={raw} onChange={e=>setRaw(e.target.value)} placeholder={"GET /... HTTP/1.1\nHost: api.real.vg\nreal-auth-info: ..."}/>{error&&<div className="errorBox">{error}</div>}<div className="toolbar" style={{justifyContent:"flex-end"}}><button className="btn" onClick={onClose}>Cancel</button><button className="btn btnPrimary" disabled={!valid||loading} onClick={connect}>{loading?"Connecting...":"Connect account"}</button></div></div></div></div>
 }
 
-function ConnectModal({ onConnect, onClose }) {
-  const [raw, setRaw] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const valid = raw.toLowerCase().includes("real-auth-info");
-
-  async function connect() {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/parse-creds", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ raw }),
-      });
-      const data = await response.json();
-      if (!response.ok || data.error) throw new Error(data.error || "Could not connect account");
-      onConnect(data);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return <div className="modalWrap"><div className="modal">
-    <div className="panelHead"><h2>Connect Real account</h2><button className="smallBtn" onClick={onClose}>Close</button></div>
-    <div className="panelBody">
-      <p>Paste a complete captured request to <code>api.real.vg</code>. ReavesBot stores the parsed headers in this browser.</p>
-      <textarea className="raw" value={raw} onChange={e => setRaw(e.target.value)} placeholder={"GET /... HTTP/1.1\nHost: api.real.vg\nreal-auth-info: ..."} />
-      {error && <div className="errorBox">{error}</div>}
-      <div className="toolbar" style={{ justifyContent: "flex-end" }}><button className="btn" onClick={onClose}>Cancel</button><button className="btn btnPrimary" disabled={!valid || loading} onClick={connect}>{loading ? "Connecting..." : "Connect account"}</button></div>
-    </div>
-  </div></div>;
+function findMarketObjects(value, out=[]){
+  if(!value||typeof value!=="object")return out;
+  if(Array.isArray(value)){value.forEach(v=>findMarketObjects(v,out));return out}
+  const marketId=value.marketId??value.marketID??value.id;
+  const outcomes=value.outcomes??value.options??value.marketOutcomes??value.selections;
+  if(marketId!=null&&Array.isArray(outcomes)) out.push(value);
+  Object.values(value).forEach(v=>findMarketObjects(v,out));
+  return out;
 }
+function marketTitle(m){return m.title||m.question||m.name||m.marketName||m.description||`Market ${m.marketId??m.id}`}
+function outcomeInfo(o){return {id:o.outcomeId??o.outcomeID??o.id,label:o.name||o.title||o.label||o.outcome||`Outcome ${o.outcomeId??o.id}`}}
 
-function mapResults(results) {
-  if (!results) return {};
-  return Array.isArray(results)
-    ? Object.fromEntries(results.map(item => [item.username, item]))
-    : results;
-}
+export default function App(){
+  const[creds,setCreds]=useState(()=>{try{return JSON.parse(localStorage.getItem("realCreds"))||null}catch{return null}});const[showConnect,setShowConnect]=useState(false);const[tab,setTab]=useState("usernames");
+  const[input,setInput]=useState("");const[interval,setIntervalValue]=useState("5");const[checking,setChecking]=useState(false);const[running,setRunning]=useState(false);const[jobId,setJobId]=useState(()=>localStorage.getItem("reavesJobId"));const[results,setResults]=useState({});const[logs,setLogs]=useState([]);const[jobStats,setJobStats]=useState({cycle:0,checks:0,state:"idle"});const[connectionNotice,setConnectionNotice]=useState("");const logRef=useRef(null);const eventSourceRef=useRef(null);const usernames=useMemo(()=>cleanNames(input),[input]);
+  const[marketRaw,setMarketRaw]=useState(null);const[marketsLoading,setMarketsLoading]=useState(false);const[selected,setSelected]=useState(null);const[pAmount,setPAmount]=useState("1000");const[pMinShares,setPMinShares]=useState("0");const[pInterval,setPInterval]=useState("3");const[pRepeats,setPRepeats]=useState("20");const[pJob,setPJob]=useState(null);const[pError,setPError]=useState("");
+  const markets=useMemo(()=>findMarketObjects(marketRaw,[]),[marketRaw]);
+  const counts=useMemo(()=>Object.values(results).reduce((a,r)=>{a.total++;if(r.available===true)a.available++;else if(r.available===false)a.taken++;else if(r.error)a.errors++;return a},{total:0,available:0,taken:0,errors:0}),[results]);
+  useEffect(()=>{if(logRef.current)logRef.current.scrollTop=logRef.current.scrollHeight},[logs]);
+  function applyJob(job){if(!job)return;setJobId(job.id);localStorage.setItem("reavesJobId",job.id);setRunning(Boolean(job.running));setResults(mapResults(job.results));setLogs(job.logs||[]);setInput((job.usernames||[]).join("\n"));setIntervalValue(String(Math.max(1,Math.round((job.interval||5000)/1000))));setJobStats({cycle:job.cycle||0,checks:job.checks||0,state:job.state||"idle"})}
+  function applyEvent(event){if(!event)return;setLogs(old=>old.some(x=>x.id===event.id&&x.timestamp===event.timestamp)?old:[...old,event].slice(-500));if(event.cycle)setJobStats(old=>({...old,cycle:event.cycle}));if(event.username&&["taken","available","claimed","claim_failed","error","warning","auth_error"].includes(event.type)){setJobStats(old=>({...old,checks:old.checks+1}));setResults(old=>({...old,[event.username]:{...old[event.username],username:event.username,available:event.available??old[event.username]?.available??null,error:["error","claim_failed"].includes(event.type)?event.message:null,status:event.type,checkedAt:event.timestamp}}))}if(["stopped","claimed","auth_error"].includes(event.type)){setRunning(false);setJobStats(old=>({...old,state:event.type}))}}
+  function connectToEvents(id){if(!id)return;eventSourceRef.current?.close();const source=new EventSource(`/api/jobs/${encodeURIComponent(id)}/events`);eventSourceRef.current=source;source.addEventListener("snapshot",e=>{try{applyJob(JSON.parse(e.data));setConnectionNotice("")}catch{}});source.onmessage=e=>{try{applyEvent(JSON.parse(e.data))}catch{}};source.onerror=()=>setConnectionNotice("Live view disconnected. The server job can continue in the background; this page will keep trying to reconnect.")}
+  useEffect(()=>{let cancelled=false;(async()=>{const savedId=localStorage.getItem("reavesJobId");for(const url of [savedId&&`/api/jobs/${encodeURIComponent(savedId)}`,"/api/jobs/current"].filter(Boolean)){try{const r=await fetch(url);if(!r.ok)continue;const d=await r.json();if(!cancelled&&d.job){applyJob(d.job);connectToEvents(d.job.id);break}}catch{}}})();return()=>{cancelled=true;eventSourceRef.current?.close()}},[]);
+  useEffect(()=>{let timer;async function poll(){try{const r=await fetch("/api/predictions/repeat/current");if(r.ok){const d=await r.json();setPJob(d.job)}}catch{}}poll();timer=setInterval(poll,2000);return()=>clearInterval(timer)},[]);
+  async function checkAll(){if(!creds||!usernames.length)return;setChecking(true);setResults(Object.fromEntries(usernames.map(username=>[username,{username,status:"checking",available:null}])));try{const r=await fetch("/api/check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usernames,creds})});const d=await r.json();if(!r.ok)throw new Error(d.error||`Check failed (${r.status})`);setResults(mapResults(d.results));setLogs(old=>[...old,{id:Date.now(),timestamp:new Date().toISOString(),type:"check",message:`Checked ${d.results.length} usernames.`}].slice(-500))}catch(e){setLogs(old=>[...old,{id:Date.now(),timestamp:new Date().toISOString(),type:"error",message:e.message}].slice(-500))}finally{setChecking(false)}}
+  async function start(){if(!creds||!usernames.length)return;try{const r=await fetch("/api/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usernames,creds,interval:Number(interval)*1000})});const d=await r.json();if(!r.ok){if(r.status===409&&d.job){applyJob(d.job);connectToEvents(d.job.id);return}throw new Error(d.error||`Could not start (${r.status})`)}applyJob(d.job);connectToEvents(d.job.id)}catch(e){setLogs(old=>[...old,{id:Date.now(),timestamp:new Date().toISOString(),type:"error",message:e.message}].slice(-500))}}
+  async function stop(){if(!jobId)return;const r=await fetch("/api/stop",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobId})});if(r.ok)setRunning(false)}
+  async function loadMarkets(){if(!creds)return;setMarketsLoading(true);setPError("");try{const r=await fetch("/api/predictions/markets",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({creds,sport:"mlb"})});const d=await r.json();if(!r.ok)throw new Error(d.error||`Market fetch failed (${r.status})`);setMarketRaw(d.markets);if(!findMarketObjects(d.markets,[]).length)setPError("Markets loaded, but this response shape was not recognized automatically. Raw response is shown below.")}catch(e){setPError(e.message)}finally{setMarketsLoading(false)}}
+  async function startPrediction(){if(!creds||!selected)return;setPError("");try{const r=await fetch("/api/predictions/repeat/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({creds,marketId:selected.marketId,outcomeId:selected.outcomeId,amount:Number(pAmount),minSharesExpected:Number(pMinShares),intervalMs:Number(pInterval)*1000,maxRepeats:Number(pRepeats)})});const d=await r.json();if(!r.ok){if(r.status===409&&d.job){setPJob(d.job);return}throw new Error(d.error||`Could not start (${r.status})`)}setPJob(d.job)}catch(e){setPError(e.message)}}
+  async function stopPrediction(){if(!pJob?.id)return;const r=await fetch("/api/predictions/repeat/stop",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobId:pJob.id})});const d=await r.json().catch(()=>({}));if(r.ok)setPJob(d.job);else setPError(d.error||"Could not stop")}
+  function disconnect(){localStorage.removeItem("realCreds");setCreds(null)}
 
-export default function App() {
-  const [creds, setCreds] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("realCreds")) || null; }
-    catch { return null; }
-  });
-  const [showConnect, setShowConnect] = useState(false);
-  const [input, setInput] = useState("");
-  const [interval, setIntervalValue] = useState("5");
-  const [checking, setChecking] = useState(false);
-  const [running, setRunning] = useState(false);
-  const [jobId, setJobId] = useState(() => localStorage.getItem("reavesJobId"));
-  const [results, setResults] = useState({});
-  const [logs, setLogs] = useState([]);
-  const [jobStats, setJobStats] = useState({ cycle: 0, checks: 0, state: "idle" });
-  const [connectionNotice, setConnectionNotice] = useState("");
-  const logRef = useRef(null);
-  const eventSourceRef = useRef(null);
-  const usernames = useMemo(() => cleanNames(input), [input]);
-
-  const counts = useMemo(() => Object.values(results).reduce((a, r) => {
-    a.total += 1;
-    if (r.available === true) a.available += 1;
-    else if (r.available === false) a.taken += 1;
-    else if (r.error) a.errors += 1;
-    return a;
-  }, { total: 0, available: 0, taken: 0, errors: 0 }), [results]);
-
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [logs]);
-
-  function applyJob(job) {
-    if (!job) return;
-    setJobId(job.id);
-    localStorage.setItem("reavesJobId", job.id);
-    setRunning(Boolean(job.running));
-    setResults(mapResults(job.results));
-    setLogs(job.logs || []);
-    setInput((job.usernames || []).join("\n"));
-    setIntervalValue(String(Math.max(1, Math.round((job.interval || 5000) / 1000))));
-    setJobStats({ cycle: job.cycle || 0, checks: job.checks || 0, state: job.state || "idle" });
-  }
-
-  function applyEvent(event) {
-    if (!event) return;
-    setLogs(old => {
-      if (old.some(item => item.id === event.id && item.timestamp === event.timestamp)) return old;
-      return [...old, event].slice(-500);
-    });
-
-    if (event.cycle) setJobStats(old => ({ ...old, cycle: event.cycle }));
-    if (event.username && ["taken", "available", "claimed", "claim_failed", "error", "warning", "auth_error"].includes(event.type)) {
-      setJobStats(old => ({ ...old, checks: old.checks + 1 }));
-      setResults(old => ({
-        ...old,
-        [event.username]: {
-          ...old[event.username],
-          username: event.username,
-          available: event.available ?? old[event.username]?.available ?? null,
-          error: ["error", "claim_failed"].includes(event.type) ? event.message : null,
-          status: event.type,
-          checkedAt: event.timestamp,
-        },
-      }));
-    }
-
-    if (["stopped", "claimed", "auth_error"].includes(event.type)) {
-      setRunning(false);
-      setJobStats(old => ({ ...old, state: event.type }));
-    }
-  }
-
-  function connectToEvents(id) {
-    if (!id) return;
-    eventSourceRef.current?.close();
-    const source = new EventSource(`/api/jobs/${encodeURIComponent(id)}/events`);
-    eventSourceRef.current = source;
-
-    source.addEventListener("snapshot", e => {
-      try {
-        applyJob(JSON.parse(e.data));
-        setConnectionNotice("");
-      } catch (_) {}
-    });
-
-    source.onmessage = e => {
-      try { applyEvent(JSON.parse(e.data)); }
-      catch (_) {}
-    };
-
-    source.onerror = () => {
-      setConnectionNotice("Live view disconnected. The server job can continue in the background; this page will keep trying to reconnect.");
-    };
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function restoreJob() {
-      const savedId = localStorage.getItem("reavesJobId");
-      const url = savedId ? `/api/jobs/${encodeURIComponent(savedId)}` : "/api/jobs/current";
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          if (savedId) {
-            localStorage.removeItem("reavesJobId");
-            const fallback = await fetch("/api/jobs/current");
-            if (!fallback.ok) return;
-            const fallbackData = await fallback.json();
-            if (cancelled || !fallbackData.job) return;
-            applyJob(fallbackData.job);
-            connectToEvents(fallbackData.job.id);
-          }
-          return;
-        }
-        const data = await response.json();
-        if (cancelled || !data.job) return;
-        applyJob(data.job);
-        connectToEvents(data.job.id);
-      } catch (_) {}
-    }
-
-    restoreJob();
-    return () => {
-      cancelled = true;
-      eventSourceRef.current?.close();
-    };
-  }, []);
-
-  async function checkAll() {
-    if (!creds || !usernames.length) return;
-    setChecking(true);
-    setResults(Object.fromEntries(usernames.map(username => [username, { username, status: "checking", available: null }])));
-    try {
-      const response = await fetch("/api/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usernames, creds }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || `Check failed (${response.status})`);
-      setResults(mapResults(data.results));
-      setLogs(old => [...old, { id: Date.now(), timestamp: new Date().toISOString(), type: "check", message: `Checked ${data.results.length} usernames.` }].slice(-500));
-    } catch (e) {
-      setLogs(old => [...old, { id: Date.now(), timestamp: new Date().toISOString(), type: "error", message: e.message }].slice(-500));
-    } finally {
-      setChecking(false);
-    }
-  }
-
-  async function start() {
-    if (!creds || !usernames.length) return;
-    try {
-      const response = await fetch("/api/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usernames, creds, interval: Number(interval) * 1000 }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        if (response.status === 409 && data.job) {
-          applyJob(data.job);
-          connectToEvents(data.job.id);
-          return;
-        }
-        throw new Error(data.error || `Could not start (${response.status})`);
-      }
-      applyJob(data.job);
-      connectToEvents(data.job.id);
-    } catch (e) {
-      setLogs(old => [...old, { id: Date.now(), timestamp: new Date().toISOString(), type: "error", message: e.message }].slice(-500));
-    }
-  }
-
-  async function stop() {
-    if (!jobId) return;
-    try {
-      const response = await fetch("/api/stop", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not stop job");
-      setRunning(false);
-    } catch (e) {
-      setLogs(old => [...old, { id: Date.now(), timestamp: new Date().toISOString(), type: "error", message: e.message }].slice(-500));
-    }
-  }
-
-  function disconnect() {
-    localStorage.removeItem("realCreds");
-    setCreds(null);
-  }
-
-  return <div className="app"><style>{css}</style>
-    <header className="topbar"><div className="brand"><div className="mark">RB</div><span>ReavesBot</span></div>
-      {creds ? <div className="account"><span className="dot"/><span>Session active</span><button className="smallBtn" onClick={disconnect}>Disconnect</button></div> : <button className="btn btnPrimary" onClick={() => setShowConnect(true)}>Connect account</button>}
-    </header>
-
-    <main className="shell">
-      <div className="eyebrow">Username operations console</div>
-      <h1 className="heading">Monitor multiple targets from one session.</h1>
-      <p className="sub">The monitoring job runs on the server and can continue after this browser is closed.</p>
-      {connectionNotice && <div className="notice">{connectionNotice}</div>}
-
-      <div className="grid">
-        <section className="panel">
-          <div className="panelHead"><span className="panelTitle">Targets</span><span className="eyebrow">{usernames.length}/50 loaded</span></div>
-          <div className="panelBody">
-            <label className="label">Usernames</label>
-            <textarea className="textarea" value={input} onChange={e => setInput(e.target.value)} disabled={running} placeholder={`username
-username_two
-username_three`} />
-            <div className="hint">Separate names with spaces, commas, or new lines. A running server job is restored after refresh.</div>
-            <div className="toolbar">
-              <select className="select" value={interval} onChange={e => setIntervalValue(e.target.value)} disabled={running}>
-                <option value="3">3 second interval</option><option value="5">5 second interval</option><option value="10">10 second interval</option><option value="30">30 second interval</option><option value="60">60 second interval</option>
-              </select>
-              <button className="btn" disabled={!creds || !usernames.length || checking || running} onClick={checkAll}>{checking ? "Checking..." : "Check all"}</button>
-              {running ? <button className="btn btnDanger" onClick={stop}>Stop monitor</button> : <button className="btn btnPrimary" disabled={!creds || !usernames.length} onClick={start}>Start monitor</button>}
-            </div>
-            <div className="statusRow">
-              <div className="metric"><div className="metricValue">{counts.total || usernames.length}</div><div className="metricLabel">Targets</div></div>
-              <div className="metric"><div className="metricValue">{jobStats.checks}</div><div className="metricLabel">Checks</div></div>
-              <div className="metric"><div className="metricValue">{jobStats.cycle}</div><div className="metricLabel">Cycles</div></div>
-              <div className="metric"><div className="metricValue">{running ? "ON" : "OFF"}</div><div className="metricLabel">Server job</div></div>
-            </div>
-          </div>
-
-          <div className="panelHead"><span className="panelTitle">Current results</span><span className="eyebrow">{jobStats.state}</span></div>
-          <div className="results">
-            {Object.keys(results).length ? Object.values(results).map(r => <div className="resultRow" key={r.username}>
-              <span className="user">@{r.username}</span>
-              <span className={`state ${r.error ? "error" : r.available === true ? "available" : r.available === false ? "taken" : "pending"}`}>{r.error ? "Error" : r.status === "claimed" ? "Claimed" : r.available === true ? "Available" : r.available === false ? "Taken" : r.status || "Pending"}</span>
-              <button className="smallBtn" disabled={running} onClick={() => setInput(r.username)}>Focus</button>
-            </div>) : <div className="empty">No checks have run yet.</div>}
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panelHead"><span className="panelTitle">Live activity</span><button className="smallBtn" onClick={() => setLogs([])}>Clear view</button></div>
-          <div className="logs" ref={logRef}>
-            {logs.length ? logs.map((log, index) => {
-              const type = log.type || "info";
-              const className = ["claimed", "available"].includes(type) ? "success" : ["waiting", "checking", "started", "warning"].includes(type) ? "warn" : ["error", "auth_error", "claim_failed"].includes(type) ? "fail" : "";
-              const time = log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : "";
-              return <div className={`log ${className}`} key={`${log.id || index}-${log.timestamp || index}`}><span className="time">{time}</span><span className="type">{type}</span><span>{log.message}</span></div>;
-            }) : <div className="empty">Activity will appear here while checking or monitoring.</div>}
-          </div>
-        </section>
-      </div>
-    </main>
-
-    {showConnect && <ConnectModal onClose={() => setShowConnect(false)} onConnect={data => { localStorage.setItem("realCreds", JSON.stringify(data)); setCreds(data); setShowConnect(false); }} />}
-  </div>;
+  return <div className="app"><style>{css}</style><header className="topbar"><div className="brand"><div className="mark">RB</div><span>ReavesBot</span></div>{creds?<div className="account"><span className="dot"/><span>Session active</span><button className="smallBtn" onClick={disconnect}>Disconnect</button></div>:<button className="btn btnPrimary" onClick={()=>setShowConnect(true)}>Connect account</button>}</header><main className="shell">
+    <div className="tabs"><button className={`tab ${tab==="usernames"?"active":""}`} onClick={()=>setTab("usernames")}>Username Monitor</button><button className={`tab ${tab==="predictions"?"active":""}`} onClick={()=>setTab("predictions")}>Predictions</button></div>
+    {tab==="usernames"?<><div className="eyebrow">Username operations console</div><h1 className="heading">Monitor multiple targets from one session.</h1><p className="sub">The monitoring job runs on the server and can continue after this browser is closed.</p>{connectionNotice&&<div className="notice">{connectionNotice}</div>}<div className="grid"><section className="panel"><div className="panelHead"><span className="panelTitle">Targets</span><span className="eyebrow">{usernames.length}/50 loaded</span></div><div className="panelBody"><label className="label">Usernames</label><textarea className="textarea" value={input} onChange={e=>setInput(e.target.value)} disabled={running} placeholder={`username\nusername_two\nusername_three`}/><div className="hint">Separate names with spaces, commas, or new lines. A running server job is restored after refresh.</div><div className="toolbar"><select className="select" value={interval} onChange={e=>setIntervalValue(e.target.value)} disabled={running}><option value="3">3 second interval</option><option value="5">5 second interval</option><option value="10">10 second interval</option><option value="30">30 second interval</option><option value="60">60 second interval</option></select><button className="btn" disabled={!creds||!usernames.length||checking||running} onClick={checkAll}>{checking?"Checking...":"Check all"}</button>{running?<button className="btn btnDanger" onClick={stop}>Stop monitor</button>:<button className="btn btnPrimary" disabled={!creds||!usernames.length} onClick={start}>Start monitor</button>}</div><div className="statusRow"><div className="metric"><div className="metricValue">{counts.total||usernames.length}</div><div className="metricLabel">Targets</div></div><div className="metric"><div className="metricValue">{jobStats.checks}</div><div className="metricLabel">Checks</div></div><div className="metric"><div className="metricValue">{jobStats.cycle}</div><div className="metricLabel">Cycles</div></div><div className="metric"><div className="metricValue">{running?"ON":"OFF"}</div><div className="metricLabel">Server job</div></div></div></div><div className="panelHead"><span className="panelTitle">Current results</span><span className="eyebrow">{jobStats.state}</span></div><div className="results">{Object.keys(results).length?Object.values(results).map(r=><div className="resultRow" key={r.username}><span className="user">@{r.username}</span><span className={`state ${r.error?"error":r.available===true?"available":r.available===false?"taken":"pending"}`}>{r.error?"Error":r.status==="claimed"?"Claimed":r.available===true?"Available":r.available===false?"Taken":r.status||"Pending"}</span><button className="smallBtn" disabled={running} onClick={()=>setInput(r.username)}>Focus</button></div>):<div className="empty">No checks have run yet.</div>}</div></section><section className="panel"><div className="panelHead"><span className="panelTitle">Live activity</span><button className="smallBtn" onClick={()=>setLogs([])}>Clear view</button></div><div className="logs" ref={logRef}>{logs.length?logs.map((log,index)=>{const type=log.type||"info";const c=["claimed","available"].includes(type)?"success":["waiting","checking","started","warning"].includes(type)?"warn":["error","auth_error","claim_failed"].includes(type)?"fail":"";const time=log.timestamp?new Date(log.timestamp).toLocaleTimeString():"";return <div className={`log ${c}`} key={`${log.id||index}-${log.timestamp||index}`}><span className="time">{time}</span><span className="type">{type}</span><span>{log.message}</span></div>}):<div className="empty">Activity will appear here while checking or monitoring.</div>}</div></section></div></>:
+    <><div className="eyebrow">Prediction tools</div><h1 className="heading">Fetch MLB markets and run a controlled repeat.</h1><p className="sub">Choose an outcome, amount, interval, and repeat cap. Temporary failures back off automatically; authentication or invalid-request errors stop the job.</p>{pError&&<div className="notice">{pError}</div>}<div className="grid"><section className="panel"><div className="panelHead"><span className="panelTitle">Markets</span><button className="btn" disabled={!creds||marketsLoading} onClick={loadMarkets}>{marketsLoading?"Loading...":"Fetch MLB markets"}</button></div><div className="marketList">{markets.length?markets.map((m,i)=>{const mid=m.marketId??m.marketID??m.id;const outcomes=m.outcomes??m.options??m.marketOutcomes??m.selections??[];return <div className="market" key={`${mid}-${i}`}><div className="marketTitle">{marketTitle(m)}</div><div className="marketMeta">marketId: {String(mid)}</div>{outcomes.map((o,j)=>{const info=outcomeInfo(o);const active=selected?.marketId===mid&&selected?.outcomeId===info.id;return <button className={`outcomeBtn ${active?"selected":""}`} key={`${info.id}-${j}`} onClick={()=>setSelected({marketId:mid,outcomeId:info.id,market:marketTitle(m),outcome:info.label})}>{info.label}</button>})}</div>}):marketRaw?<div className="panelBody"><div className="codebox">{JSON.stringify(marketRaw,null,2)}</div></div>:<div className="empty">Fetch markets to begin.</div>}</div></section><section className="panel"><div className="panelHead"><span className="panelTitle">Repeat position</span><span className="eyebrow">{pJob?.state||"idle"}</span></div><div className="panelBody">{selected?<div className="notice">Selected: {selected.market} / {selected.outcome}</div>:<div className="hint">Select an outcome from the market list.</div>}<div className="twoCol"><div><label className="label">Amount (Rax)</label><input className="input" type="number" min="1" value={pAmount} onChange={e=>setPAmount(e.target.value)}/></div><div><label className="label">Min shares expected</label><input className="input" type="number" min="0" value={pMinShares} onChange={e=>setPMinShares(e.target.value)}/></div><div><label className="label">Interval</label><select className="select" value={pInterval} onChange={e=>setPInterval(e.target.value)}><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option><option value="30">30 seconds</option></select></div><div><label className="label">Repeat cap</label><input className="input" type="number" min="1" max="100" value={pRepeats} onChange={e=>setPRepeats(e.target.value)}/></div></div><div className="toolbar">{pJob?.running?<button className="btn btnDanger" onClick={stopPrediction}>Stop</button>:<button className="btn btnPrimary" disabled={!creds||!selected} onClick={startPrediction}>Start repeat</button>}</div><div className="statusRow"><div className="metric"><div className="metricValue">{pJob?.completed||0}</div><div className="metricLabel">Accepted</div></div><div className="metric"><div className="metricValue">{pJob?.failedAttempts||0}</div><div className="metricLabel">Failed tries</div></div><div className="metric"><div className="metricValue">{pJob?.lastStatus||"-"}</div><div className="metricLabel">Last HTTP</div></div><div className="metric"><div className="metricValue">{pJob?.running?"ON":"OFF"}</div><div className="metricLabel">Repeat job</div></div></div></div><div className="panelHead"><span className="panelTitle">Prediction activity</span></div><div className="logs">{pJob?.logs?.length?pJob.logs.map((log,i)=><div className={`log ${log.type==="success"?"success":log.type==="retry"?"warn":"fail"}`} key={log.id||i}><span className="time">{new Date(log.timestamp).toLocaleTimeString()}</span><span className="type">{log.type}</span><span>{log.message}</span></div>):<div className="empty">No prediction activity yet.</div>}</div></section></div></>}
+  </main>{showConnect&&<ConnectModal onClose={()=>setShowConnect(false)} onConnect={data=>{localStorage.setItem("realCreds",JSON.stringify(data));setCreds(data);setShowConnect(false)}}/>}</div>
 }
